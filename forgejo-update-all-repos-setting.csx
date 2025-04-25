@@ -1,6 +1,6 @@
-#r "nuget: ForgejoApiClient, 9.0.0-rev.3"
+#r "nuget: ForgejoApiClient, 11.0.0-rev.1"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly, 0.69.0"
+#r "nuget: Lestaly, 0.75.0"
 #load ".env-helper.csx"
 #load ".forgejo-helper.csx"
 #nullable enable
@@ -71,7 +71,7 @@ return await Paved.RunAsync(config: c => c.AnyPause(), action: async () =>
     // リポジトリ設定更新
     await foreach (var repo in forgejo.AllReposAsync(signal.Token).WithCancellation(signal.Token))
     {
-        Console.WriteLine($"Update: {repo.full_name}");
+        WriteLine($"Update: {repo.full_name}");
         await forgejo.Repository.UpdateAsync(repo.owner!.login!, repo.name!, settings.RepoSettings);
     }
 });
