@@ -1,6 +1,6 @@
 #r "nuget: ForgejoApiClient, 11.0.0-rev.1"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly, 0.75.0"
+#r "nuget: Lestaly, 0.79.0"
 #load ".env-helper.csx"
 #load ".forgejo-helper.csx"
 #nullable enable
@@ -38,7 +38,7 @@ var settings = new
 };
 
 // メイン処理
-return await Paved.RunAsync(config: c => c.AnyPause(), action: async () =>
+return await Paved.ProceedAsync(async () =>
 {
     // コンソール準備
     using var signal = new SignalCancellationPeriod();

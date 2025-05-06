@@ -1,4 +1,4 @@
-#r "nuget: Lestaly, 0.75.0"
+#r "nuget: Lestaly, 0.79.0"
 #r "nuget: AngleSharp, 1.3.0"
 #nullable enable
 using System.Threading;
@@ -26,12 +26,10 @@ var settings = new
     },
 };
 
-var noInteract = Args.Any(a => a == "--no-interact");
-var pauseMode = noInteract ? PavedPause.None : PavedPause.Any;
-
-return await Paved.RunAsync(config: c => c.PauseOn(pauseMode), action: async () =>
+return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), async () =>
 {
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var signal = new SignalCancellationPeriod();
 
     // サービスリンクを表示
     WriteLine("Service URL");
@@ -45,7 +43,7 @@ return await Paved.RunAsync(config: c => c.PauseOn(pauseMode), action: async () 
     var context = BrowsingContext.New(config);
     // ページ取得。なぜか空の内容が得られる場合があるので、空の場合はリトライする
     var document = default(IDocument);
-    using (var breaker = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+    using (var breaker = signal.Token.CreateLink(TimeSpan.FromSeconds(10)))
     {
         while (document == null || document.Source.Length <= 0)
         {

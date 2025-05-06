@@ -1,4 +1,4 @@
-#r "nuget: Lestaly, 0.75.0"
+#r "nuget: Lestaly, 0.79.0"
 #load "../.env-helper.csx"
 #nullable enable
 using Lestaly;
@@ -19,10 +19,7 @@ var settings = new
     ApiKeyFile = ThisSource.RelativeFile("../.auth-forgejo-api"),
 };
 
-var noInteract = Args.Any(a => a == "--no-interact");
-var pauseMode = noInteract ? PavedPause.None : PavedPause.Any;
-
-return await Paved.RunAsync(config: c => c.PauseOn(pauseMode), action: async () =>
+return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), async () =>
 {
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
 

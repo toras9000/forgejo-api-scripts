@@ -1,5 +1,5 @@
 #r "nuget: ForgejoApiClient, 11.0.0-rev.1"
-#r "nuget: Lestaly, 0.75.0"
+#r "nuget: Lestaly, 0.79.0"
 #r "nuget: Kokuban, 0.2.0"
 #load "../.env-helper.csx"
 #nullable enable
@@ -19,10 +19,7 @@ var settings = new
     ApiKeyFile = ThisSource.RelativeFile("../.auth-forgejo-api"),
 };
 
-var noInteract = Args.Any(a => a == "--no-interact");
-var pauseMode = noInteract ? PavedPause.None : PavedPause.Any;
-
-return await Paved.RunAsync(config: c => c.PauseOn(pauseMode), action: async () =>
+return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), async () =>
 {
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
     using var signal = new SignalCancellationPeriod();
@@ -34,7 +31,7 @@ return await Paved.RunAsync(config: c => c.PauseOn(pauseMode), action: async () 
     WriteLine("クライアント準備 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
     var me = default(User);
-    using (var breaker = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+    using (var breaker = signal.Token.CreateLink(TimeSpan.FromSeconds(5)))
     {
         // 初期化直後はAPI呼び出しがエラーとなることがあるようなので、一定時間繰り返し呼び出しを試みる。
         while (me == null || me.login == null)
