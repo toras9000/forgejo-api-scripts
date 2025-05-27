@@ -1,5 +1,6 @@
-#r "nuget: ForgejoApiClient, 11.0.0-rev.1"
-#r "nuget: Lestaly, 0.79.0"
+#!/usr/bin/env dotnet-script
+#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
+#r "nuget: Lestaly.General, 0.100.0"
 #r "nuget: Kokuban, 0.2.0"
 #load "../.env-helper.csx"
 #nullable enable
@@ -16,13 +17,13 @@ var settings = new
     ServiceURL = new Uri("http://localhost:9940"),
 
     // トークン保存ファイル
-    ApiKeyFile = ThisSource.RelativeFile("../.auth-forgejo-api"),
+    AdminApiKeyFile = ThisSource.RelativeFile("../.admin-forgejo.key"),
 
     // 作成するユーザの定義
     Users = new CreateUserOption[]
     {
-        new(username: "test-user", email: "test@example.com", password: "test-pass", full_name: "テストユーザ"),
-        new(username: "toras9000", email: "toras9000@example.com", password: "toras9000-pass", full_name: "toras9000"),
+        new(username: "test-user", email: "test@example.com", password: "test-pass", full_name: "テストユーザ", must_change_password: false),
+        new(username: "toras9000", email: "toras9000@example.com", password: "toras9000-pass", full_name: "toras9000", must_change_password: false),
     },
 
     // 作成する組織の定義
@@ -56,7 +57,7 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
     using var signal = new SignalCancellationPeriod();
 
     WriteLine("APIトークンを読み込み ...");
-    var forgejoToken = await settings.ApiKeyFile.ScriptScrambler().LoadTokenAsync() ?? throw new Exception("トークン情報を読み取れない");
+    var forgejoToken = await settings.AdminApiKeyFile.ScriptScrambler().LoadTokenAsync(signal.Token) ?? throw new Exception("トークン情報を読み取れない");
     if (forgejoToken.Service.AbsoluteUri != settings.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
     WriteLine("クライアント準備 ...");

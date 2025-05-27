@@ -1,8 +1,20 @@
 name: forgejo-api-scripts-test
+
+volumes:
+  forgejo-app-data:
+  forgejo-runner-data:
+
 services:
   app:
-    image: codeberg.org/forgejo/forgejo:9
+    image: codeberg.org/forgejo/forgejo:12
     restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - forgejo-app-container
+    ports:
+      - "9940:3000"
+      - "9942:22"
     healthcheck:
       test: curl -f -s http://localhost:3000 || exit 1
       start_period: 60s
@@ -10,28 +22,68 @@ services:
       timeout: 5s
       interval: 300s
       retries: 3
-    ports:
-      - "9940:3000"
-      - "9942:22"
     volumes:
       - type: volume
-        source: forgejo-data
+        source: forgejo-app-data
         target: /data
     environment:
       - TZ=JST-9
       - USER_UID=1000
       - USER_GID=1000
-      - FORGEJO__log__LEVEL=Info
       - FORGEJO__database__DB_TYPE=sqlite3
       - FORGEJO__cron_0x2E_update_checker__ENABLED=false
-      - FORGEJO__server__SSH_PORT=9942
       - FORGEJO__server__ROOT_URL=http://localhost:9940
-      - FORGEJO__webhook__ALLOWED_HOST_LIST=*
+      - FORGEJO__server__SSH_PORT=9942
+      - FORGEJO__admin__USER_DISABLED_FEATURES=deletion
+      - FORGEJO__admin__EXTERNAL_USER_DISABLE_FEATURES=deletion
+      - FORGEJO__service__DISABLE_REGISTRATION=true
+      - FORGEJO__service__REQUIRE_SIGNIN_VIEW=true
+      - FORGEJO__service_0x2E_explore__REQUIRE_SIGNIN_VIEW=true
       - FORGEJO__migrations__ALLOW_LOCALNETWORKS=true
       - FORGEJO__quota__ENABLED=true
-    extra_hosts:
-      - testhost-gateway:host-gateway
+      - FORGEJO__quota__DEFAULT_GROUPS=default-quota
+      - FORGEJO__webhook__ALLOWED_HOST_LIST=*
 
-volumes:
-  forgejo-data:
+  docker:
+    image: docker:dind
+    restart: 'unless-stopped'
+    privileged: 'true'
+    networks:
+      default:
+        aliases:
+          - forgejo-docker-container
+    command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
+    healthcheck:
+      test: docker -H tcp://localhost:2375 info || exit 1
+      start_period: 60s
+      start_interval: 3s
+      timeout: 5s
+      interval: 300s
+      retries: 3
 
+  runner:
+    image: code.forgejo.org/forgejo/runner:7
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+      docker:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - forgejo-runner-container
+    user: 1000:1000
+    command: '/bin/sh /assets/scripts/startup.sh --config /assets/configs/config.yml'
+    volumes:
+      - type: bind
+        source: ./assets/runner
+        target: /assets
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: volume
+        source: forgejo-runner-data
+        target: /data
+    environment:
+      DOCKER_HOST: tcp://forgejo-docker-container:2375

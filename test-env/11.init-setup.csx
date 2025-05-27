@@ -1,11 +1,11 @@
-#r "nuget: Lestaly, 0.79.0"
+#!/usr/bin/env dotnet-script
+#r "nuget: Lestaly.General, 0.100.0"
 #r "nuget: AngleSharp, 1.3.0"
 #nullable enable
 using System.Threading;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
-using DocumentFormat.OpenXml.InkML;
 using Lestaly;
 using Lestaly.Cx;
 

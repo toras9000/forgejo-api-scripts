@@ -1,4 +1,4 @@
-#r "nuget: Lestaly, 0.79.0"
+#r "nuget: Lestaly.General, 0.100.0"
 #nullable enable
 using System.Buffers;
 using System.Text.Json;
@@ -12,7 +12,7 @@ public record ServiceToken(Uri Service, string Token);
 /// ファイルと認証情報(ユーザ名/パスワード)を紐づける。
 public static async ValueTask<ServiceCredential> BindCredentialAsync(this FileInfo self, string name, Uri service, CancellationToken cancelToken = default)
 {
-    var scrambler = self.CreateScrambler(context: self.FullName);
+    var scrambler = self.ScriptScrambler();
     var auth = await scrambler.DescrambleObjectAsync<ServiceCredential>(cancelToken);
     if (auth == null || auth.Service.AbsoluteUri != service.AbsoluteUri)
     {
@@ -48,8 +48,9 @@ public static async ValueTask<ServiceToken> BindTokenAsync(this FileInfo self, s
     var auth = await scrambler.LoadTokenAsync(cancelToken);
     if (auth == null || auth.Service.AbsoluteUri != service.AbsoluteUri)
     {
-        WriteLine($"{name} を入力");
-        Write(">"); var token = ReadLine().CancelIfWhite();
+        WriteLine($"{name} を入力"); Write(">");
+        var token = ReadLine().CancelIfWhite();
+        Clear();
         auth = await scrambler.SaveTokenAsync(service, token, cancelToken);
     }
     return auth;
