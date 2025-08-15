@@ -1,8 +1,8 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
+#r "nuget: ForgejoApiClient, 12.0.1-rev.3"
 #r "nuget: R3, 1.3.0"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.100.0"
+#r "nuget: Lestaly.General, 0.102.0"
 #load ".env-helper.csx"
 #nullable enable
 using ForgejoApiClient;
@@ -30,7 +30,6 @@ var settings = new
     {
         ThisSource.RelativeDirectory("./test-repos/show-vars"),
         ThisSource.RelativeDirectory("./test-repos/schedule"),
-        ThisSource.RelativeDirectory("./test-repos/mirror-oci"),
     },
 };
 
@@ -41,16 +40,13 @@ return await Paved.ProceedAsync(async () =>
     using var signal = new SignalCancellationPeriod();
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
 
-    // タイトル出力
-    WriteLine("Forgejoにテストリポジトを登録する");
+    WriteLine("テストリポジトを登録する");
     WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     WriteLine();
 
-    // 認証情報を準備
     WriteLine("サービス認証情報の準備");
     var forgejoToken = await settings.Forgejo.ApiTokenFile.BindTokenAsync("Forgejo APIトークン", settings.Forgejo.ServiceURL, signal.Token);
 
-    // APIクライアントを準備
     WriteLine("Forgejo クライアントの生成 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
     var apiUser = await forgejo.User.GetMeAsync(cancelToken: signal.Token);
@@ -58,7 +54,6 @@ return await Paved.ProceedAsync(async () =>
     WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
     WriteLine();
 
-    // リポジトリ設定更新
     WriteLine("リポジトリ作成 ...");
     foreach (var repoDir in settings.TestRepos)
     {

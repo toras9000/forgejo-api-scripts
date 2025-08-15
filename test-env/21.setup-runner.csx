@@ -1,6 +1,6 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
-#r "nuget: Lestaly.General, 0.100.0"
+#r "nuget: ForgejoApiClient, 12.0.1-rev.3"
+#r "nuget: Lestaly.General, 0.102.0"
 #r "nuget: Kokuban, 0.2.0"
 #load "../.env-helper.csx"
 #nullable enable
@@ -64,11 +64,11 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
     if (settings.Runner.RegisterType == "global")
     {
         if (apiUser.is_admin != true) throw new PavedMessageException("APIトークンのユーザが管理者ではない。", PavedMessageKind.Error);
-        runnerToken = (await forgejo.Admin.GetActionRunnerRegistrationTokenAsync(signal.Token)).token;
+        runnerToken = (await forgejo.Admin.GetActionsRunnerRegistrationTokenAsync(signal.Token)).token;
     }
     else if (settings.Runner.RegisterType == "user")
     {
-        runnerToken = (await forgejo.User.GetActionRunnerRegistrationTokenAsync(signal.Token)).token;
+        runnerToken = (await forgejo.User.GetActionsRunnerRegistrationTokenAsync(signal.Token)).token;
     }
     else
     {
