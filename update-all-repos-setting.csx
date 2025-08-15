@@ -1,7 +1,7 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
+#r "nuget: ForgejoApiClient, 12.0.1-rev.3"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.100.0"
+#r "nuget: Lestaly.General, 0.102.0"
 #load ".env-helper.csx"
 #load ".forgejo-helper.csx"
 #nullable enable
@@ -43,7 +43,7 @@ return await Paved.ProceedAsync(async () =>
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
 
     // タイトル出力
-    WriteLine("Forgejoの全てのリポジトリ設定を更新する");
+    WriteLine("全てのリポジトリ設定を更新する");
     WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     WriteLine();
 

@@ -1,4 +1,4 @@
-#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
+#r "nuget: ForgejoApiClient, 12.0.1-rev.3"
 #nullable enable
 using System.Runtime.CompilerServices;
 using System.Threading;

@@ -1,13 +1,14 @@
 #!/usr/bin/env dotnet-script
 #r "nuget: ForgejoApiClient, 12.0.1-rev.3"
+#r "nuget: R3, 1.3.0"
 #r "nuget: Kokuban, 0.2.0"
 #r "nuget: Lestaly.General, 0.102.0"
 #load ".env-helper.csx"
-#load ".forgejo-helper.csx"
 #nullable enable
 using ForgejoApiClient;
 using ForgejoApiClient.Api;
 using Kokuban;
+using R3;
 using Lestaly;
 using Lestaly.Cx;
 
@@ -23,16 +24,6 @@ var settings = new
         // APIキー保存ファイル
         ApiTokenFile = ThisSource.RelativeFile(".toras-forgejo.key"),
     },
-
-    // リポジトリ更新パラメータ
-    RepoSettings = new EditRepoOption(
-        has_issues: false,
-        has_pull_requests: false,
-        has_packages: false,
-        has_projects: false,
-        has_wiki: false,
-        has_actions: false
-    ),
 };
 
 // メイン処理
@@ -43,14 +34,13 @@ return await Paved.ProceedAsync(async () =>
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
 
     // タイトル出力
-    WriteLine("リポジトを一覧する");
+    WriteLine("Workflowをトリガする");
     WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     WriteLine();
 
     // 認証情報を準備
     WriteLine("サービス認証情報の準備");
     var forgejoToken = await settings.Forgejo.ApiTokenFile.BindTokenAsync("Forgejo APIトークン", settings.Forgejo.ServiceURL, signal.Token);
-    if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
     // APIクライアントを準備
     WriteLine("Forgejo クライアントの生成 ...");
@@ -61,8 +51,9 @@ return await Paved.ProceedAsync(async () =>
     WriteLine();
 
     // リポジトリ設定更新
-    await foreach (var repo in forgejo.AllReposAsync(signal.Token).WithCancellation(signal.Token))
-    {
-        WriteLine($"{repo.full_name}\tSize={repo.size?.ToHumanize()}iB\tIssues={repo.open_issues_count}\tPRs={repo.open_pr_counter}");
-    }
+    WriteLine(" ...");
+    await forgejo.Repository.DispatchActionsWorkflowAsync(apiUser.login, "show-vars", "vars.yml", new("main"), signal.Token);
+
+    var runs = await forgejo.Repository.ListActionsRunsAsync(apiUser.login, "show-vars", @event: ["workflow_dispatch"], status: ["waiting"]);
+    runs = null!;
 });

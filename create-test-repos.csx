@@ -1,8 +1,8 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
+#r "nuget: ForgejoApiClient, 12.0.1-rev.3"
 #r "nuget: R3, 1.3.0"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.100.0"
+#r "nuget: Lestaly.General, 0.102.0"
 #load ".env-helper.csx"
 #nullable enable
 using ForgejoApiClient;
@@ -42,7 +42,7 @@ return await Paved.ProceedAsync(async () =>
     using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
 
     // タイトル出力
-    WriteLine("Forgejoにテストリポジトを登録する");
+    WriteLine("テストリポジトを登録する");
     WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     WriteLine();
 

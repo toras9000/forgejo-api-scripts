@@ -1,6 +1,6 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 12.0.1-rev.1"
-#r "nuget: Lestaly.General, 0.100.0"
+#r "nuget: ForgejoApiClient, 12.0.1-rev.3"
+#r "nuget: Lestaly.General, 0.102.0"
 #r "nuget: Kokuban, 0.2.0"
 #load "../.env-helper.csx"
 #nullable enable
@@ -72,7 +72,7 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
 
         WriteLine($".. Action Secret - {target.SecretName}");
         using var userClient = forgejo.Sudo(target.User);
-        await userClient.User.SetActionSecretAsync(target.SecretName, new(apiToken), signal.Token);
+        await userClient.User.SetActionsSecretAsync(target.SecretName, new(apiToken), signal.Token);
         WriteLine(".. 設定");
     }
 });
