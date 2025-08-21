@@ -18,7 +18,7 @@ var settings = new
         new("Kokuban",            "0.2.0"         ),
         new("Kurukuru",           "1.5.0"         ),
         new("AngleSharp",         "1.3.0"         ),
-        new("ForgejoApiClient",   "12.0.1-rev.3"  ),
+        new("ForgejoApiClient",   "12.0.1-rev.4"  ),
         new("R3",                 "1.3.0"         ),
         new("NuGet.Protocol",     "6.14.0"        ),
     },
