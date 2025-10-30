@@ -3,7 +3,7 @@
 #r "nuget: R3, 1.3.0"
 #r "nuget: Kokuban, 0.2.0"
 #r "nuget: Kurukuru, 1.5.0"
-#r "nuget: Lestaly.General, 0.106.0"
+#r "nuget: Lestaly.General, 0.108.0"
 #load ".env-helper.csx"
 #nullable enable
 using ForgejoApiClient;

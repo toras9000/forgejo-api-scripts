@@ -1,7 +1,7 @@
 #!/usr/bin/env dotnet-script
 #r "nuget: ForgejoApiClient, 13.0.0-rev.1"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.106.0"
+#r "nuget: Lestaly.General, 0.108.0"
 #load ".env-helper.csx"
 #load ".forgejo-helper.csx"
 #nullable enable
@@ -58,7 +58,7 @@ return await Paved.ProceedAsync(async () =>
     WriteLine();
 
     WriteLine("各リポジトリ設定の更新");
-    await foreach (var repo in forgejo.AllReposAsync(signal.Token).WithCancellation(signal.Token))
+    await foreach (var repo in forgejo.AllReposAsync(signal.Token))
     {
         WriteLine($"Update: {repo.full_name}");
         await forgejo.Repository.UpdateAsync(repo.owner!.login!, repo.name!, settings.RepoSettings);

@@ -1,7 +1,7 @@
 #!/usr/bin/env dotnet-script
 #r "nuget: ForgejoApiClient, 13.0.0-rev.1"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.106.0"
+#r "nuget: Lestaly.General, 0.108.0"
 #load ".env-helper.csx"
 #load ".forgejo-helper.csx"
 #nullable enable
@@ -58,7 +58,7 @@ return await Paved.ProceedAsync(async () =>
     WriteLine();
 
     WriteLine("リポジトリ情報の取得");
-    await foreach (var repo in forgejo.AllReposAsync(signal.Token).WithCancellation(signal.Token))
+    await foreach (var repo in forgejo.AllReposAsync(signal.Token))
     {
         WriteLine($"{repo.full_name}\tSize={repo.size?.ToHumanize()}iB\tIssues={repo.open_issues_count}\tPRs={repo.open_pr_counter}");
     }
