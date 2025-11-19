@@ -1,7 +1,7 @@
 #!/usr/bin/env dotnet-script
 #r "nuget: ForgejoApiClient, 13.0.0-rev.1"
 #r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.108.0"
+#r "nuget: Lestaly.General, 0.112.0"
 #load ".env-helper.csx"
 #load ".forgejo-helper.csx"
 #nullable enable
