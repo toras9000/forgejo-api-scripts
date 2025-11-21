@@ -1,9 +1,11 @@
-#!/usr/bin/env dotnet-script
-#r "nuget: Lestaly.General, 0.112.0"
-#load "../.env-helper.csx"
-#nullable enable
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.114.0
+#:package RefFile@0.1.1
+#:property PublishAot=false
 using Lestaly;
 using Lestaly.Cx;
+
+[assembly: RefFile("../.env-helper.cs1")]
 
 var settings = new
 {
@@ -26,11 +28,11 @@ var settings = new
     ApiKeyFile = ThisSource.RelativeFile("../.admin-forgejo.key"),
 };
 
-return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), async () =>
+return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
-    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var outenc = Console.OutputUtf8EncodingPeriod();
 
-    WriteLine("テスト用 APIトークンの生成 ...");
+    Console.WriteLine("テスト用 APIトークンの生成 ...");
     var apiToken = await "docker".args("compose", "--file", settings.ComposeFile,
         "exec", "-u", "1000", settings.ForgejoServiceName,
         "forgejo", "admin", "user", "generate-access-token",
@@ -40,8 +42,8 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
             "--raw"
     ).silent().result().success().output(trim: true);
 
-    WriteLine("トークンをファイルに保存 ...");
+    Console.WriteLine("トークンをファイルに保存 ...");
     await settings.ApiKeyFile.ScriptScrambler().SaveTokenAsync(settings.ServiceURL, apiToken);
 
-    WriteLine("完了");
+    Console.WriteLine("完了");
 });

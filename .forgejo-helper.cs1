@@ -1,0 +1,29 @@
+#!/usr/bin/env -S dotnet run --file
+#:package ForgejoApiClient@13.0.0-rev.1
+using System.Runtime.CompilerServices;
+using ForgejoApiClient;
+using ForgejoApiClient.Api;
+
+public static class ForgejoExtensions
+{
+    extension(ForgejoClient self)
+    {
+        public async IAsyncEnumerable<Repository> AllReposAsync([EnumeratorCancellation] CancellationToken cancelToken = default)
+        {
+            var settings = await self.Settings.GetApiSettingsAsync(cancelToken);
+            var limit = (int?)settings.max_response_items ?? 50;
+            var page = 1;
+            while (true)
+            {
+                var result = await self.Repository.SearchAsync(paging: new(page: page, limit: limit), cancelToken: cancelToken);
+                if (result.data == null || result.data.Count <= 0) break;
+                page++;
+
+                foreach (var repo in result.data)
+                {
+                    yield return repo;
+                }
+            }
+        }
+    }
+}

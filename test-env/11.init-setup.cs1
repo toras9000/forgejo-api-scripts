@@ -1,13 +1,10 @@
-#!/usr/bin/env dotnet-script
-#r "nuget: Lestaly.General, 0.112.0"
-#r "nuget: AngleSharp, 1.4.0"
-#nullable enable
-using System.Threading;
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.114.0
+#:package AngleSharp@1.4.0
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Lestaly;
-using Lestaly.Cx;
 
 var settings = new
 {
@@ -26,19 +23,19 @@ var settings = new
     },
 };
 
-return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), async () =>
+return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
-    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     // サービスリンクを表示
-    WriteLine("Service URL");
-    WriteLine($"  {Poster.Link[settings.ServiceURL]}");
-    WriteLine();
+    Console.WriteLine("Service URL");
+    Console.WriteLine($"  {Poster.Link[settings.ServiceURL]}");
+    Console.WriteLine();
 
     // 初回起動(セットアップフォームが表示されるか)を判別する
-    WriteLine();
-    WriteLine("初期化状態の取得中 ...");
+    Console.WriteLine();
+    Console.WriteLine("初期化状態の取得中 ...");
     var config = Configuration.Default.WithDefaultLoader();
     var context = BrowsingContext.New(config);
     // ページ取得。なぜか空の内容が得られる場合があるので、空の場合はリトライする
@@ -56,17 +53,17 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
     if (container == null)
     {
         // 初回起動画面を検出できない場合はすでにセットアップ済みと思われるので処理を終える
-        WriteLine(".. 既にインスタンスが初期化されている");
+        Console.WriteLine(".. 既にインスタンスが初期化されている");
         return;
     }
     else
     {
         // 初回起動らしきページを得た場合はセットアップ処理継続
-        WriteLine(".. 初期セットアップが必要であることを検出");
+        Console.WriteLine(".. 初期セットアップが必要であることを検出");
     }
 
     // セットアップフォームの取得を試みる
-    WriteLine("初期セットアップを実施中 ...");
+    Console.WriteLine("初期セットアップを実施中 ...");
     var forms = container.Descendants<IHtmlFormElement>().ToArray();
     if (forms.Length != 1) throw new PavedMessageException("ページ構造が想定外");
 
@@ -79,5 +76,5 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
         admin_confirm_passwd = settings.Setup.AdminPass,
     });
     var loadingElement = setupResult.GetElementById("goto-user-login") ?? throw new PavedMessageException("ページ構造が想定外");
-    WriteLine(".. セットアップ完了");
+    Console.WriteLine(".. セットアップ完了");
 });

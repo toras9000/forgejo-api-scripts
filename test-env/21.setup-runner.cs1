@@ -1,14 +1,15 @@
-#!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 13.0.0-rev.1"
-#r "nuget: Lestaly.General, 0.112.0"
-#r "nuget: Kokuban, 0.2.0"
-#load "../.env-helper.csx"
-#nullable enable
-using System.Threading;
+#!/usr/bin/env -S dotnet run --file
+#:package ForgejoApiClient@13.0.0-rev.1
+#:package Lestaly.General@0.114.0
+#:package Kokuban@0.2.0
+#:package RefFile@0.1.1
+#:property PublishAot=false
 using ForgejoApiClient;
 using Kokuban;
 using Lestaly;
 using Lestaly.Cx;
+
+[assembly: RefFile("../.env-helper.cs1")]
 
 var settings = new
 {
@@ -42,24 +43,24 @@ var settings = new
     },
 };
 
-return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), async () =>
+return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
     using var signal = new SignalCancellationPeriod();
-    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var outenc = Console.OutputUtf8EncodingPeriod();
 
-    WriteLine("APIトークンを読み込み ...");
+    Console.WriteLine("APIトークンを読み込み ...");
     var forgejoToken = await settings.Forgejo.AdminApiKeyFile.ScriptScrambler().LoadTokenAsync(signal.Token) ?? throw new Exception("トークン情報を読み取れない");
     if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
-    WriteLine("Forgejo クライアントの生成 ...");
+    Console.WriteLine("Forgejo クライアントの生成 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
     var apiUser = await forgejo.User.GetMeAsync(cancelToken: signal.Token);
     if (apiUser.login == null) throw new PavedMessageException("情報取得失敗", PavedMessageKind.Error);
-    WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
-    WriteLine();
+    Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
+    Console.WriteLine();
 
-    WriteLine("ランナー登録トークンを取得");
-    WriteLine($".. Type: {settings.Runner.RegisterType}");
+    Console.WriteLine("ランナー登録トークンを取得");
+    Console.WriteLine($".. Type: {settings.Runner.RegisterType}");
     var runnerToken = default(string);
     if (settings.Runner.RegisterType == "global")
     {
@@ -74,9 +75,9 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
     {
         throw new PavedMessageException("登録種別設定不正", PavedMessageKind.Error);
     }
-    WriteLine($".. Token: {runnerToken}");
+    Console.WriteLine($".. Token: {runnerToken}");
 
-    WriteLine("ランナー登録");
+    Console.WriteLine("ランナー登録");
     using var timeout = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
     timeout.CancelAfter(TimeSpan.FromSeconds(10));
     await "docker".args("compose", "--file", settings.Runner.ComposeFile,
@@ -88,5 +89,5 @@ return await Paved.ProceedAsync(noPause: Args.RoughContains("--no-interact"), as
             "--token", runnerToken
     ).killby(timeout.Token).result().success();
 
-    WriteLine(Chalk.Green[".. 完了"]);
+    Console.WriteLine(Chalk.Green[".. 完了"]);
 });

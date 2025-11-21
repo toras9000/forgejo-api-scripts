@@ -1,15 +1,16 @@
-#!/usr/bin/env dotnet-script
-#r "nuget: ForgejoApiClient, 13.0.0-rev.1"
-#r "nuget: Kokuban, 0.2.0"
-#r "nuget: Lestaly.General, 0.112.0"
-#load ".env-helper.csx"
-#load ".forgejo-helper.csx"
-#nullable enable
+#!/usr/bin/env -S dotnet run --file
+#:package ForgejoApiClient@13.0.0-rev.1
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.114.0
+#:package RefFile@0.1.1
+#:property PublishAot=false
 using ForgejoApiClient;
 using ForgejoApiClient.Api;
 using Kokuban;
 using Lestaly;
-using Lestaly.Cx;
+
+[assembly: RefFile(".env-helper.cs1")]
+[assembly: RefFile(".forgejo-helper.cs1")]
 
 // 設定
 var settings = new
@@ -31,7 +32,7 @@ var settings = new
         has_packages: false,
         has_projects: false,
         has_wiki: false,
-        has_actions: false
+        has_actions: true
     ),
 };
 
@@ -40,26 +41,27 @@ return await Paved.ProceedAsync(async () =>
 {
     // コンソール準備
     using var signal = new SignalCancellationPeriod();
-    using var outenc = ConsoleWig.OutputEncodingPeriod(Encoding.UTF8);
+    using var outenc = Console.OutputUtf8EncodingPeriod();
 
-    WriteLine("リポジトを一覧する");
-    WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
-    WriteLine();
+    Console.WriteLine("全てのリポジトリ設定を更新する");
+    Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
+    Console.WriteLine();
 
-    WriteLine("サービス認証情報の準備");
+    Console.WriteLine("サービス認証情報の準備");
     var forgejoToken = await settings.Forgejo.ApiTokenFile.BindTokenAsync("Forgejo APIトークン", settings.Forgejo.ServiceURL, signal.Token);
     if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
-    WriteLine("Forgejo クライアントの生成 ...");
+    Console.WriteLine("Forgejo クライアントの生成 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
     var apiUser = await forgejo.User.GetMeAsync(cancelToken: signal.Token);
     if (apiUser.login == null) throw new PavedMessageException("情報取得失敗", PavedMessageKind.Error);
-    WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
-    WriteLine();
+    Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
+    Console.WriteLine();
 
-    WriteLine("リポジトリ情報の取得");
+    Console.WriteLine("各リポジトリ設定の更新");
     await foreach (var repo in forgejo.AllReposAsync(signal.Token))
     {
-        WriteLine($"{repo.full_name}\tSize={repo.size?.ToHumanize()}iB\tIssues={repo.open_issues_count}\tPRs={repo.open_pr_counter}");
+        Console.WriteLine($"Update: {repo.full_name}");
+        await forgejo.Repository.UpdateAsync(repo.owner!.login!, repo.name!, settings.RepoSettings);
     }
 });

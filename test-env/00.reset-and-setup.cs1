@@ -1,0 +1,18 @@
+#!/usr/bin/env -S dotnet run --file
+#:package Lestaly.General@0.114.0
+using Lestaly;
+using Lestaly.Cx;
+
+return await Paved.ProceedAsync(async () =>
+{
+    using var outenc = Console.OutputUtf8EncodingPeriod();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("01.delete-containers.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("02.restart-containers.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("11.init-setup.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("12.generate-admin-api-key.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("13.create-users.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("14.generate-users-api-key.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("15.generate-token-to-secrets.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("19.create-default-quota-group.cs1"), "--", "--no-interact").echo().result().success();
+    await "dotnet".args("run", "--file", ThisSource.RelativeFile("21.setup-runner.cs1"), "--", "--no-interact").echo().result().success();
+});
