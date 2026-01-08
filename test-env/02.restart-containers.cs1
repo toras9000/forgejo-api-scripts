@@ -5,8 +5,6 @@ using Lestaly.Cx;
 
 return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
-    using var outenc = Console.OutputUtf8EncodingPeriod();
-
     Console.WriteLine("テスト環境の再起動 ...");
     var composeFile = ThisSource.RelativeFile("./docker/compose.yml");
     await "docker".args("compose", "--file", composeFile, "down", "--remove-orphans").result().success();

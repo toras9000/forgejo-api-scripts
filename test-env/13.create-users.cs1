@@ -8,7 +8,6 @@ using ForgejoApiClient;
 using ForgejoApiClient.Api;
 using Kokuban;
 using Lestaly;
-
 [assembly: RefFile("../.env-helper.cs1")]
 
 var settings = new
@@ -51,7 +50,6 @@ var settings = new
 
 return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
-    using var outenc = Console.OutputUtf8EncodingPeriod();
     using var signal = new SignalCancellationPeriod();
 
     Console.WriteLine("APIトークンを読み込み ...");

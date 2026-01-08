@@ -5,7 +5,6 @@ using Lestaly.Cx;
 
 return await Paved.ProceedAsync(async () =>
 {
-    using var outenc = Console.OutputUtf8EncodingPeriod();
     await "dotnet".args("run", "--file", ThisSource.RelativeFile("01.delete-containers.cs1"), "--", "--no-interact").echo().result().success();
     await "dotnet".args("run", "--file", ThisSource.RelativeFile("02.restart-containers.cs1"), "--", "--no-interact").echo().result().success();
     await "dotnet".args("run", "--file", ThisSource.RelativeFile("11.init-setup.cs1"), "--", "--no-interact").echo().result().success();

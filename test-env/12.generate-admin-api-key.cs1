@@ -4,7 +4,6 @@
 #:property PublishAot=false
 using Lestaly;
 using Lestaly.Cx;
-
 [assembly: RefFile("../.env-helper.cs1")]
 
 var settings = new
@@ -30,8 +29,6 @@ var settings = new
 
 return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
-    using var outenc = Console.OutputUtf8EncodingPeriod();
-
     Console.WriteLine("テスト用 APIトークンの生成 ...");
     var apiToken = await "docker".args("compose", "--file", settings.ComposeFile,
         "exec", "-u", "1000", settings.ForgejoServiceName,
