@@ -62,7 +62,7 @@ services:
       retries: 3
 
   runner:
-    image: code.forgejo.org/forgejo/runner:11
+    image: code.forgejo.org/forgejo/runner:12
     restart: unless-stopped
     depends_on:
       app:
