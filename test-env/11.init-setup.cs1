@@ -37,8 +37,7 @@ return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), as
 
     // 初回起動(セットアップフォームが表示されるか)を判別する
     Console.WriteLine("初期化状態の取得中 ...");
-    var requester = new DefaultHttpRequester();
-    requester.Timeout = TimeSpan.FromSeconds(3 * 60);
+    var requester = new DefaultHttpRequester() { Timeout = TimeSpan.FromSeconds(3 * 60) };
     var config = Configuration.Default.With(requester).WithDefaultLoader();
     using var context = BrowsingContext.New(config);
 
@@ -77,6 +76,8 @@ return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), as
         var forms = container.Descendants<IHtmlFormElement>().ToArray();
         if (forms.Length != 1) throw new PavedMessageException("ページ構造が想定外");
         var setupForm = forms[0];
+
+        // 設定を変更
         var inputUpdateChecker = setupForm.QuerySelectorAll<IHtmlInputElement>("*").FirstOrDefault(e => e.Type == "checkbox" && e.Name == "enable_update_checker");
         if (inputUpdateChecker == null) throw new PavedMessageException("Unexpected setup form");
         inputUpdateChecker.IsChecked = false;
