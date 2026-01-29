@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file
-#:package ForgejoApiClient@13.0.0-rev.1
+#:package ForgejoApiClient@14.0.0-rev.1
 using System.Runtime.CompilerServices;
 using ForgejoApiClient;
 using ForgejoApiClient.Api;

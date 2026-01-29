@@ -1,7 +1,7 @@
 #!/usr/bin/env -S dotnet run --file
-#:package ForgejoApiClient@13.0.0-rev.1
+#:package ForgejoApiClient@14.0.0-rev.1
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.114.0
+#:package Lestaly.General@0.116.0
 #:package RefFile@0.2.0
 #:property PublishAot=false
 using ForgejoApiClient;

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S dotnet run --file
 #:package AngleSharp@1.4.0
-#:package Lestaly.General@0.114.0
+#:package Lestaly.General@0.116.0
 using System.Net;
 using AngleSharp;
 using AngleSharp.Dom;
