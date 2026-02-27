@@ -1,9 +1,9 @@
 #!/usr/bin/env -S dotnet run --file
-#:package ForgejoApiClient@14.0.0-rev.1
-#:package Lestaly.General@0.116.0
+#:package ForgejoApiClient@15.0.0-rev.3
+#:package Lestaly.General@0.125.0
 #:package Kokuban@0.2.0
 #:package RefFile@0.2.0
-#:property PublishAot=false
+using System.Text;
 using ForgejoApiClient;
 using Kokuban;
 using Lestaly;
@@ -29,27 +29,22 @@ var settings = new
         // composeファイル
         ComposeFile = ThisSource.RelativeFile("./docker/compose.yml"),
 
-        // コンテナ サービス名
-        ServiceName = "runner",
-
         // 登録先インスタンス (for runnner)
         RegisterInstance = "http://forgejo-app-container:3000",
 
-        // 登録種別 ("global" or "user")
-        RegisterType = "global",
-
         // 登録名
         RegisterName = "default-runner",
+
+        ServiceConfigFile = ThisSource.RelativeFile("./docker/assets/runner/services/service.yml"),
     },
 };
 
 return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
 {
     using var signal = new SignalCancellationPeriod();
-    using var outenc = Console.OutputUtf8EncodingPeriod();
 
     Console.WriteLine("APIトークンを読み込み ...");
-    var forgejoToken = await settings.Forgejo.AdminApiKeyFile.ScriptScrambler().LoadTokenAsync(signal.Token) ?? throw new Exception("トークン情報を読み取れない");
+    var forgejoToken = await settings.Forgejo.AdminApiKeyFile.LoadTokenAsync(signal.Token) ?? throw new Exception("トークン情報を読み取れない");
     if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
     Console.WriteLine("Forgejo クライアントの生成 ...");
@@ -59,35 +54,27 @@ return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), as
     Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
     Console.WriteLine();
 
-    Console.WriteLine("ランナー登録トークンを取得");
-    Console.WriteLine($".. Type: {settings.Runner.RegisterType}");
-    var runnerToken = default(string);
-    if (settings.Runner.RegisterType == "global")
+    Console.WriteLine("ランナー登録のチェック");
+    var runners = await forgejo.Admin.ListActionsRunnersAsync(cancelToken: signal.Token);
+    if (runners.Any(r => r.name == settings.Runner.RegisterName))
     {
-        if (apiUser.is_admin != true) throw new PavedMessageException("APIトークンのユーザが管理者ではない。", PavedMessageKind.Error);
-        runnerToken = (await forgejo.Admin.GetActionsRunnerRegistrationTokenAsync(signal.Token)).token;
+        Console.WriteLine(".. すでに登録済み");
+        return;
     }
-    else if (settings.Runner.RegisterType == "user")
-    {
-        runnerToken = (await forgejo.User.GetActionsRunnerRegistrationTokenAsync(signal.Token)).token;
-    }
-    else
-    {
-        throw new PavedMessageException("登録種別設定不正", PavedMessageKind.Error);
-    }
-    Console.WriteLine($".. Token: {runnerToken}");
 
     Console.WriteLine("ランナー登録");
-    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
-    timeout.CancelAfter(TimeSpan.FromSeconds(10));
-    await "docker".args("compose", "--file", settings.Runner.ComposeFile,
-        "exec", settings.Runner.ServiceName,
-        "forgejo-runner", "register",
-            "--no-interactive",
-            "--name", settings.Runner.RegisterName,
-            "--instance", settings.Runner.RegisterInstance,
-            "--token", runnerToken
-    ).killby(timeout.Token).result().success();
+    var runner = await forgejo.Admin.CreateActionsRunnerAsync(new(settings.Runner.RegisterName), signal.Token);
+    Console.WriteLine($".. uuid={runner.uuid}");
 
-    Console.WriteLine(Chalk.Green[".. 完了"]);
+    Console.WriteLine("サービス設定ファイルを作成");
+    await settings.Runner.ServiceConfigFile.WithDirectoryCreate().WriteMultilineTextAsync(lineBreak: "\n", encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), multiline: $"""
+    
+        forgejo:
+          url: {settings.Runner.RegisterInstance}
+          uuid: {runner.uuid}
+          token: {runner.token}
+    
+    """.AsMemory(), signal.Token);
+    Console.WriteLine(Chalk.Green[".. 作成"]);
+
 });

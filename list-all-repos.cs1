@@ -1,9 +1,8 @@
 #!/usr/bin/env -S dotnet run --file
-#:package ForgejoApiClient@14.0.0-rev.1
+#:package ForgejoApiClient@15.0.0-rev.3
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.125.0
 #:package RefFile@0.2.0
-#:property PublishAot=false
 using ForgejoApiClient;
 using ForgejoApiClient.Api;
 using Kokuban;
@@ -41,7 +40,6 @@ return await Paved.ProceedAsync(async () =>
 {
     // コンソール準備
     using var signal = new SignalCancellationPeriod();
-    using var outenc = Console.OutputUtf8EncodingPeriod();
 
     Console.WriteLine("リポジトを一覧する");
     Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");

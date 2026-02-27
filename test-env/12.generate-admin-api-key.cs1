@@ -1,7 +1,6 @@
 #!/usr/bin/env -S dotnet run --file
-#:package Lestaly.General@0.116.0
+#:package Lestaly.General@0.125.0
 #:package RefFile@0.2.0
-#:property PublishAot=false
 using Lestaly;
 using Lestaly.Cx;
 [assembly: RefFile("../.env-helper.cs1")]
@@ -40,7 +39,7 @@ return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), as
     ).silent().result().success().output(trim: true);
 
     Console.WriteLine("トークンをファイルに保存 ...");
-    await settings.ApiKeyFile.ScriptScrambler().SaveTokenAsync(settings.ServiceURL, apiToken);
+    await settings.ApiKeyFile.SaveTokenAsync(settings.ServiceURL, apiToken);
 
     Console.WriteLine("完了");
 });
