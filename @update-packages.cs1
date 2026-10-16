@@ -1,8 +1,8 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package NuGet.Protocol@7.6.0
+#:package NuGet.Protocol@7.9.0
 #:package R3@1.3.1
 #:package Kokuban@0.2.0
-#:package Lestaly.General@0.141.0
+#:package Lestaly.General@0.147.0
 using System.Text.RegularExpressions;
 using Kokuban;
 using Lestaly;
@@ -32,6 +32,7 @@ return await Paved.ProceedAsync(async () =>
     var sources = NuGet.Configuration.PackageSourceProvider.LoadPackageSources(config).ToArray();
     var seachers = await sources.ToObservable()
         .SelectAwait(async (s, c) => await Repository.Factory.GetCoreV3(s).GetResourceAsync<PackageMetadataResource>(c))
+        .WhereNotNull()
         .ToArrayAsync();
 
     // find context
