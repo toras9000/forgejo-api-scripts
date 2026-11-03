@@ -44,9 +44,9 @@ runner:
   # The timeout for fetching the job from the Forgejo instance.
   fetch_timeout: 30s
   # The interval for fetching the job from the Forgejo instance.
-  fetch_interval: 60s
+  fetch_interval: 2s
   # The interval for reporting the job status and logs to the Forgejo instance.
-  report_interval: 2s
+  report_interval: 1s
   # At the end of a job, retry configuration for sending logs to remote.
   # report_retry:
   #   # Maximum number of retry attempts.

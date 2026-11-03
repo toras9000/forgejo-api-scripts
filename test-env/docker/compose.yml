@@ -6,7 +6,7 @@ volumes:
 
 services:
   app:
-    image: codeberg.org/forgejo/forgejo:16
+    image: codeberg.org/forgejo/forgejo:17
     restart: unless-stopped
     networks:
       default:
@@ -62,7 +62,7 @@ services:
       retries: 3
 
   runner:
-    image: code.forgejo.org/forgejo/runner:12
+    image: code.forgejo.org/forgejo/runner:13
     restart: unless-stopped
     depends_on:
       docker:
