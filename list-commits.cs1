@@ -1,0 +1,103 @@
+#!/usr/bin/env -S dotnet run --file
+#:package ForgejoApiClient@17.0.0-rev.1
+#:package Kokuban@0.2.0
+#:package Lestaly.General@0.147.0
+#:package RefFile@0.2.0
+using ForgejoApiClient;
+using ForgejoApiClient.Api;
+using Kokuban;
+using Lestaly;
+[assembly: RefFile(".env-helper.cs1")]
+[assembly: RefFile(".forgejo-helper.cs1")]
+
+// 設定
+var settings = new
+{
+    // Forgejo 関連の情報
+    Forgejo = new
+    {
+        // サービスURL
+        ServiceURL = new Uri("http://localhost:9940/"),
+
+        // APIキー保存ファイル
+        ApiTokenFile = ThisSource.RelativeFile(".toras-forgejo.key"),
+    },
+};
+
+// メイン処理
+return await Paved.ProceedAsync(async () =>
+{
+    // コンソール準備
+    using var signal = new SignalCancellationPeriod();
+
+    Console.WriteLine("リポジトを一覧する");
+    Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
+    Console.WriteLine();
+
+    Console.WriteLine("サービス認証情報の準備");
+    var forgejoToken = await settings.Forgejo.ApiTokenFile.BindTokenAsync("Forgejo APIトークン", settings.Forgejo.ServiceURL, signal.Token);
+    if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
+
+    Console.WriteLine("Forgejo クライアントの生成 ...");
+    using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
+    var apiUser = await forgejo.User.GetMeAsync(cancelToken: signal.Token);
+    if (apiUser.login == null) throw new PavedMessageException("情報取得失敗", PavedMessageKind.Error);
+    Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
+    Console.WriteLine();
+
+    Console.WriteLine("リポジトリ一覧の取得");
+    var repos = await forgejo.Repository.SearchAsync(sort: "updated", order: "desc", cancelToken: signal.Token);
+    if (repos.data == null || repos.data.Count <= 0)
+    {
+        Console.WriteLine($".. no repositories");
+        return;
+    }
+    var target = repos.data.First();
+    if (1 < repos.data.Count)
+    {
+        foreach (var repo in repos.data.Take(10).Index())
+        {
+            Console.WriteLine($"{repo.Index + 1,2}. {repo.Item.full_name}");
+        }
+        Console.WriteLine();
+
+        Console.WriteLine($"コミット取得対象の選択");
+        while (true)
+        {
+            Console.Write(">");
+            var input = Console.ReadLine();
+            if (input == null) return;
+            if (input.IsWhite()) continue;
+            if (input.TryParseNumber<int>() is not int num)
+            {
+                Console.WriteLine("コミット番号を指定してください");
+                continue;
+            }
+            if (num < 1 || repos.data.Count < num)
+            {
+                Console.WriteLine($"1 ～ {repos.data.Count} で指定してください");
+                continue;
+            }
+
+            target = repos.data.ElementAt(num - 1);
+            break;
+        }
+        Console.WriteLine();
+    }
+
+    Console.WriteLine($"対象リポジトリ");
+    Console.WriteLine($".. {target.full_name}");
+    Console.WriteLine();
+
+    Console.WriteLine("コミット一覧の取得");
+    var repoOwner = target.owner!.login!;
+    var repoName = target.name!;
+    var commits = await forgejo.Repository.ListCommitsAsync(repoOwner, repoName, cancelToken: signal.Token);
+    foreach (var change in commits)
+    {
+        var hash = change.sha.AsSpan(..8);
+        var msg = (change.commit?.message).TakeLine();
+        var stats = $"+{change.stats?.additions ?? 0}/-{change.stats?.deletions}";
+        Console.WriteLine($"  {hash}  {msg} ({stats})");
+    }
+});
