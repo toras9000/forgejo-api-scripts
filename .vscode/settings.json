@@ -2,7 +2,8 @@
     "dotnet.projects.enableFileBasedPrograms": true,
     "dotnet.server.useOmnisharp": false,
     "files.associations": {
-        "*.cs1": "csharp"
+        "*.cs1": "csharp",
+        "*.cs2": "csharp",
     },
     "json.schemas": [
         {
@@ -11,7 +12,7 @@
             ],
             "schema": {
                 "allowTrailingCommas": true,
-            }
-        }
-    ]
+            },
+        },
+    ],
 }

@@ -2,13 +2,13 @@
 #:package ForgejoApiClient@17.0.0-rev.1
 #:package R3@1.3.1
 #:package Kokuban@0.2.0
+#:package Kurukuru@1.5.0
 #:package Lestaly.General@0.147.0
-#:package RefFile@0.2.0
+#:include .env-helper.cs
 using ForgejoApiClient;
-using ForgejoApiClient.Api;
 using Kokuban;
 using Lestaly;
-[assembly: RefFile(".env-helper.cs1")]
+using Kurukuru;
 
 // 設定
 var settings = new
@@ -22,12 +22,6 @@ var settings = new
         // APIキー保存ファイル
         ApiTokenFile = ThisSource.RelativeFile(".toras-forgejo.key"),
     },
-
-    // ソースリポジトリ
-    SourceRepos = new[]
-    {
-        new { Uri = new Uri("https://github.com/github/gitignore.git"), Name = "gitignore", },
-    },
 };
 
 // メイン処理
@@ -36,7 +30,7 @@ return await Paved.ProceedAsync(async () =>
     // コンソール準備
     using var signal = new SignalCancellationPeriod();
 
-    Console.WriteLine("テストリポジトを登録する");
+    Console.WriteLine("Workflowをトリガする");
     Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     Console.WriteLine();
 
@@ -45,24 +39,28 @@ return await Paved.ProceedAsync(async () =>
 
     Console.WriteLine("Forgejo クライアントの生成 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
-    forgejo.Timeout = TimeSpan.FromMinutes(15);
     var apiUser = await forgejo.User.GetMeAsync(cancelToken: signal.Token);
     if (apiUser.login == null) throw new PavedMessageException("情報取得失敗", PavedMessageKind.Error);
     Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
     Console.WriteLine();
 
-    Console.WriteLine("リポジトリマイグレーション ...");
-    foreach (var repoSrc in settings.SourceRepos)
-    {
-        Console.WriteLine($"  Migrate from {repoSrc.Uri}");
-        var repos = await forgejo.Repository.SearchAsync(q: repoSrc.Name, cancelToken: signal.Token);
-        if (repos.data?.Any(r => r.name == repoSrc.Name) == true)
-        {
-            Console.WriteLine(Chalk.Gray[$"  .. 既に存在する"]);
-            continue;
-        }
-        var repo = await forgejo.Repository.MigrateAsync(new(repoSrc.Uri.AbsoluteUri, repoSrc.Name), cancelToken: signal.Token);
-        Console.WriteLine(Chalk.Green["  .. 完了"]);
-    }
+    Console.WriteLine("ワークフロー実行 ...");
+    var run = await forgejo.Repository.DispatchActionsWorkflowAsync(apiUser.login, "show-vars", "vars.yml", new(@ref: "main", return_run_info: true), signal.Token);
+    if (run?.id == null) throw new PavedMessageException("実行情報取得失敗", PavedMessageKind.Warning);
 
+    var runInfo = await Spinner.StartAsync("完了待機 ...", action: async (spinner) =>
+    {
+        var caption = spinner.Text;
+        using var breaker = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
+        breaker.CancelAfter(TimeSpan.FromMinutes(3));
+        while (true)
+        {
+            var runInfo = await forgejo.Repository.GetActionsRunAsync(apiUser.login, "show-vars", run.id.Value, breaker.Token);
+            spinner.Text = $"{caption} {runInfo.status} {runInfo.duration / 1000 / 1000 / 1000}";
+            if (DateTimeOffset.UnixEpoch < runInfo.stopped) return runInfo;
+            await Task.Delay(TimeSpan.FromSeconds(5), breaker.Token);
+        }
+    });
+
+    Console.WriteLine($"ワークフロー完了");
 });

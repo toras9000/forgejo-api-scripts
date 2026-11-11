@@ -2,12 +2,11 @@
 #:package ForgejoApiClient@17.0.0-rev.1
 #:package Lestaly.General@0.147.0
 #:package Kokuban@0.2.0
-#:package RefFile@0.2.0
+#:include ../.env-helper.cs
 using System.Text;
 using ForgejoApiClient;
 using Kokuban;
 using Lestaly;
-[assembly: RefFile("../.env-helper.cs1")]
 
 var settings = new
 {
@@ -37,7 +36,7 @@ var settings = new
     },
 };
 
-return await Paved.ProceedAsync(noPause: args.RoughContains("--no-interact"), async () =>
+return await Paved.ProceedAsync(async () =>
 {
     using var signal = new SignalCancellationPeriod();
 

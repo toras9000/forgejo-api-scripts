@@ -1,5 +1,5 @@
 #!/usr/bin/env -S dotnet run --file 
-#:package NuGet.Protocol@7.9.0
+#:package NuGet.Protocol@8.0.0
 #:package R3@1.3.1
 #:package Kokuban@0.2.0
 #:package Lestaly.General@0.147.0
@@ -17,6 +17,14 @@ var settings = new
 {
     // Search directory for script files
     TargetDir = ThisSource.RelativeDirectory("./"),
+
+    // Target file extensions
+    TargetExtensions = new[]
+    {
+        ".cs",
+        ".cs1",
+        ".cs2",
+    },
 
     // Version of the package to pin
     FixedVersions = new PackageIdentity[]
@@ -40,14 +48,25 @@ return await Paved.ProceedAsync(async () =>
     var logger = NullLogger.Instance;
 
     // Dictionary of packages to be updated
-    var versions = settings.FixedVersions.ToDictionary(p => p.Id, p => (PackageIdentity?)p);
+    var versions = settings.FixedVersions
+        .Where(p => p.Id != "Dummy")
+        .ToDictionary(p => p.Id, p => (PackageIdentity?)p);
+
+    // Set of updated packages
+    var updatedPackages = new HashSet<string>();
 
     // Detection regular expression for package reference directives
     var detector = new Regex(@"^#:package\s+(?<package>[a-zA-Z0-9_\-\.]+)\s*@\s*(?<version>.+)\s*");
 
+    // Target extensions
+    var targetExts = settings.TargetExtensions.Select(e => e.EnsureStarts(".")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
     // Search for scripts under the target directory
-    foreach (var file in settings.TargetDir.EnumerateFiles("*.cs1", SearchOption.AllDirectories))
+    foreach (var file in settings.TargetDir.EnumerateFiles("*", SearchOption.AllDirectories))
     {
+        // Extension filter
+        if (!targetExts.Contains(file.Extension)) continue;
+
         Console.WriteLine($"File: {file.RelativePathFrom(settings.TargetDir)}");
 
         // Read file contents
@@ -67,6 +86,7 @@ return await Paved.ProceedAsync(async () =>
             // Determine if the package is eligible for renewal
             var srcName = match.Groups["package"].Value;
             var srcVer = match.Groups["version"].Value;
+            if (srcVer.Trim() == "*") continue;
             if (!versions.TryGetValue(srcName, out var identity))
             {
                 // Interpret the original version to determine if it is a pre-release.
@@ -108,6 +128,7 @@ return await Paved.ProceedAsync(async () =>
 
             // set a flag that there is an update
             updated = true;
+            updatedPackages.Add(srcName);
             Console.WriteLine(Chalk.Green[$"  Update: {srcName} {srcVer} -> {latestVer}"]);
         }
 
@@ -127,7 +148,8 @@ return await Paved.ProceedAsync(async () =>
     var nameWidth = versions.Keys.Max(n => n.Length);
     foreach (var pkg in versions.OrderBy(e => e.Key))
     {
-        Console.WriteLine($"  {pkg.Key.PadRight(nameWidth)}  {pkg.Value?.Version.ToFullString() ?? "?"}");
+        var chalk = updatedPackages.Contains(pkg.Key) ? Chalk.Green : default;
+        Console.WriteLine($"  {chalk[pkg.Key.PadRight(nameWidth)]}  {chalk[pkg.Value?.Version.ToFullString() ?? "?"]}");
     }
 
 });

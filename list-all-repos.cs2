@@ -2,13 +2,12 @@
 #:package ForgejoApiClient@17.0.0-rev.1
 #:package Kokuban@0.2.0
 #:package Lestaly.General@0.147.0
-#:package RefFile@0.2.0
+#:include .env-helper.cs
+#:include .forgejo-helper.cs
 using ForgejoApiClient;
 using ForgejoApiClient.Api;
 using Kokuban;
 using Lestaly;
-[assembly: RefFile(".env-helper.cs1")]
-[assembly: RefFile(".forgejo-helper.cs1")]
 
 // 設定
 var settings = new
@@ -30,7 +29,7 @@ var settings = new
         has_packages: false,
         has_projects: false,
         has_wiki: false,
-        has_actions: true
+        has_actions: false
     ),
 };
 
@@ -40,7 +39,7 @@ return await Paved.ProceedAsync(async () =>
     // コンソール準備
     using var signal = new SignalCancellationPeriod();
 
-    Console.WriteLine("全てのリポジトリ設定を更新する");
+    Console.WriteLine("リポジトを一覧する");
     Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     Console.WriteLine();
 
@@ -55,10 +54,9 @@ return await Paved.ProceedAsync(async () =>
     Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
     Console.WriteLine();
 
-    Console.WriteLine("各リポジトリ設定の更新");
+    Console.WriteLine("リポジトリ情報の取得");
     await foreach (var repo in forgejo.AllReposAsync(signal.Token))
     {
-        Console.WriteLine($"Update: {repo.full_name}");
-        await forgejo.Repository.UpdateAsync(repo.owner!.login!, repo.name!, settings.RepoSettings);
+        Console.WriteLine($"{repo.full_name}\tSize={repo.size?.ToHumanize()}iB\tIssues={repo.open_issues_count}\tPRs={repo.open_pr_counter}");
     }
 });

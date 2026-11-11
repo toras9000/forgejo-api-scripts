@@ -1,14 +1,12 @@
 #!/usr/bin/env -S dotnet run --file
 #:package ForgejoApiClient@17.0.0-rev.1
+#:package R3@1.3.1
 #:package Kokuban@0.2.0
 #:package Lestaly.General@0.147.0
-#:package RefFile@0.2.0
+#:include .env-helper.cs
 using ForgejoApiClient;
-using ForgejoApiClient.Api;
 using Kokuban;
 using Lestaly;
-[assembly: RefFile(".env-helper.cs1")]
-[assembly: RefFile(".forgejo-helper.cs1")]
 
 // 設定
 var settings = new
@@ -23,15 +21,11 @@ var settings = new
         ApiTokenFile = ThisSource.RelativeFile(".toras-forgejo.key"),
     },
 
-    // リポジトリ更新パラメータ
-    RepoSettings = new EditRepoOption(
-        has_issues: false,
-        has_pull_requests: false,
-        has_packages: false,
-        has_projects: false,
-        has_wiki: false,
-        has_actions: false
-    ),
+    // フォークリポジトリ
+    ForkRepos = new[]
+    {
+        new { SrcOwner = "toras9000", SrcName = "show-vars", ForkName = "show-vars-forked",  },
+    },
 };
 
 // メイン処理
@@ -40,24 +34,33 @@ return await Paved.ProceedAsync(async () =>
     // コンソール準備
     using var signal = new SignalCancellationPeriod();
 
-    Console.WriteLine("リポジトを一覧する");
+    Console.WriteLine("テストリポジトを登録する");
     Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     Console.WriteLine();
 
     Console.WriteLine("サービス認証情報の準備");
     var forgejoToken = await settings.Forgejo.ApiTokenFile.BindTokenAsync("Forgejo APIトークン", settings.Forgejo.ServiceURL, signal.Token);
-    if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
     Console.WriteLine("Forgejo クライアントの生成 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
+    forgejo.Timeout = TimeSpan.FromMinutes(15);
     var apiUser = await forgejo.User.GetMeAsync(cancelToken: signal.Token);
     if (apiUser.login == null) throw new PavedMessageException("情報取得失敗", PavedMessageKind.Error);
     Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
     Console.WriteLine();
 
-    Console.WriteLine("リポジトリ情報の取得");
-    await foreach (var repo in forgejo.AllReposAsync(signal.Token))
+    Console.WriteLine("リポジトリマイグレーション ...");
+    foreach (var repoFork in settings.ForkRepos)
     {
-        Console.WriteLine($"{repo.full_name}\tSize={repo.size?.ToHumanize()}iB\tIssues={repo.open_issues_count}\tPRs={repo.open_pr_counter}");
+        Console.WriteLine($"  Fork from {repoFork.SrcOwner}/{repoFork.SrcName}");
+        var repos = await forgejo.Repository.SearchAsync(q: $"{apiUser.login}/{repoFork.ForkName}", cancelToken: signal.Token);
+        if (repos.data?.Any(r => r.name == repoFork.ForkName) == true)
+        {
+            Console.WriteLine(Chalk.Gray[$"  .. 既に存在する"]);
+            continue;
+        }
+        var repo = await forgejo.Repository.ForkAsync(repoFork.SrcOwner, repoFork.SrcName, new(repoFork.ForkName), cancelToken: signal.Token);
+        Console.WriteLine(Chalk.Green["  .. 完了"]);
     }
+
 });

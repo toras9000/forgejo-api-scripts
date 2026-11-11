@@ -1,15 +1,13 @@
 #!/usr/bin/env -S dotnet run --file
 #:package ForgejoApiClient@17.0.0-rev.1
-#:package R3@1.3.1
 #:package Kokuban@0.2.0
-#:package Kurukuru@1.5.0
 #:package Lestaly.General@0.147.0
-#:package RefFile@0.2.0
+#:include .env-helper.cs
+#:include .forgejo-helper.cs
 using ForgejoApiClient;
+using ForgejoApiClient.Api;
 using Kokuban;
 using Lestaly;
-using Kurukuru;
-[assembly: RefFile(".env-helper.cs1")]
 
 // 設定
 var settings = new
@@ -23,6 +21,16 @@ var settings = new
         // APIキー保存ファイル
         ApiTokenFile = ThisSource.RelativeFile(".toras-forgejo.key"),
     },
+
+    // リポジトリ更新パラメータ
+    RepoSettings = new EditRepoOption(
+        has_issues: false,
+        has_pull_requests: false,
+        has_packages: false,
+        has_projects: false,
+        has_wiki: false,
+        has_actions: true
+    ),
 };
 
 // メイン処理
@@ -31,12 +39,13 @@ return await Paved.ProceedAsync(async () =>
     // コンソール準備
     using var signal = new SignalCancellationPeriod();
 
-    Console.WriteLine("Workflowをトリガする");
+    Console.WriteLine("全てのリポジトリ設定を更新する");
     Console.WriteLine($"  Forgejo   : {settings.Forgejo.ServiceURL}");
     Console.WriteLine();
 
     Console.WriteLine("サービス認証情報の準備");
     var forgejoToken = await settings.Forgejo.ApiTokenFile.BindTokenAsync("Forgejo APIトークン", settings.Forgejo.ServiceURL, signal.Token);
+    if (forgejoToken.Service.AbsoluteUri != settings.Forgejo.ServiceURL.AbsoluteUri) throw new Exception("保存情報が対象と合わない");
 
     Console.WriteLine("Forgejo クライアントの生成 ...");
     using var forgejo = new ForgejoClient(forgejoToken.Service, forgejoToken.Token);
@@ -45,23 +54,10 @@ return await Paved.ProceedAsync(async () =>
     Console.WriteLine(Chalk.Gray[$"  .. User: {apiUser.login}"]);
     Console.WriteLine();
 
-    Console.WriteLine("ワークフロー実行 ...");
-    var run = await forgejo.Repository.DispatchActionsWorkflowAsync(apiUser.login, "show-vars", "vars.yml", new(@ref: "main", return_run_info: true), signal.Token);
-    if (run?.id == null) throw new PavedMessageException("実行情報取得失敗", PavedMessageKind.Warning);
-
-    var runInfo = await Spinner.StartAsync("完了待機 ...", action: async (spinner) =>
+    Console.WriteLine("各リポジトリ設定の更新");
+    await foreach (var repo in forgejo.AllReposAsync(signal.Token))
     {
-        var caption = spinner.Text;
-        using var breaker = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
-        breaker.CancelAfter(TimeSpan.FromMinutes(3));
-        while (true)
-        {
-            var runInfo = await forgejo.Repository.GetActionsRunAsync(apiUser.login, "show-vars", run.id.Value, breaker.Token);
-            spinner.Text = $"{caption} {runInfo.status} {runInfo.duration / 1000 / 1000 / 1000}";
-            if (DateTimeOffset.UnixEpoch < runInfo.stopped) return runInfo;
-            await Task.Delay(TimeSpan.FromSeconds(5), breaker.Token);
-        }
-    });
-
-    Console.WriteLine($"ワークフロー完了");
+        Console.WriteLine($"Update: {repo.full_name}");
+        await forgejo.Repository.UpdateAsync(repo.owner!.login!, repo.name!, settings.RepoSettings);
+    }
 });
